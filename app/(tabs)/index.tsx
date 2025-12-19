@@ -1,5 +1,6 @@
 import ChatItem from "@/components/ChatItem";
 import { getAllUserChats } from "@/service/chats";
+import { useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -12,12 +13,15 @@ import {
 
 export default function Index() {
   const [chats, setChats] = useState([]);
+  const { refresh } = useLocalSearchParams();
+
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchChats = async () => {
     try {
       const response = await getAllUserChats();
+
       if (response.status === "success") {
         setChats(response.data);
       }
@@ -31,7 +35,7 @@ export default function Index() {
 
   useEffect(() => {
     fetchChats();
-  }, []);
+  }, [refresh]);
 
   const onRefresh = () => {
     setRefreshing(true);
