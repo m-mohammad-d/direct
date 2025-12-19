@@ -38,16 +38,16 @@ export default function Register() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
-      className="flex-1 bg-gray-900 justify-center px-6"
+      className="flex-1 px-6 justify-center bg-background-800"
     >
-      <Text className="text-4xl font-bold text-white mb-6 text-center">
+      <Text className="text-4xl font-bold text-text-200 mb-6 text-center">
         Create Account
       </Text>
 
       <View className="mb-4">
-        <Text className="text-gray-400 mb-1">Username</Text>
+        <Text className="text-text-400 mb-1">Username</Text>
         <TextInput
-          className="bg-gray-800 text-white px-4 py-3 rounded-lg border border-gray-700"
+          className="bg-background-700 text-text-200 px-4 py-3 rounded-lg border border-background-600"
           placeholder="Username"
           placeholderTextColor="#9CA3AF"
           value={username}
@@ -56,9 +56,9 @@ export default function Register() {
       </View>
 
       <View className="mb-4">
-        <Text className="text-gray-400 mb-1">Email</Text>
+        <Text className="text-text-400 mb-1">Email</Text>
         <TextInput
-          className="bg-gray-800 text-white px-4 py-3 rounded-lg border border-gray-700"
+          className="bg-background-700 text-text-200 px-4 py-3 rounded-lg border border-background-600"
           placeholder="Email"
           placeholderTextColor="#9CA3AF"
           keyboardType="email-address"
@@ -69,9 +69,9 @@ export default function Register() {
       </View>
 
       <View className="mb-4">
-        <Text className="text-gray-400 mb-1">Password</Text>
+        <Text className="text-text-400 mb-1">Password</Text>
         <TextInput
-          className="bg-gray-800 text-white px-4 py-3 rounded-lg border border-gray-700"
+          className="bg-background-700 text-text-200 px-4 py-3 rounded-lg border border-background-600"
           placeholder="Password"
           placeholderTextColor="#9CA3AF"
           secureTextEntry
@@ -81,9 +81,9 @@ export default function Register() {
       </View>
 
       <View className="mb-4">
-        <Text className="text-gray-400 mb-1">Confirm Password</Text>
+        <Text className="text-text-400 mb-1">Confirm Password</Text>
         <TextInput
-          className="bg-gray-800 text-white px-4 py-3 rounded-lg border border-gray-700"
+          className="bg-background-700 text-text-200 px-4 py-3 rounded-lg border border-background-600"
           placeholder="Confirm"
           placeholderTextColor="#9CA3AF"
           secureTextEntry
@@ -92,22 +92,24 @@ export default function Register() {
         />
       </View>
 
-      {error ? <Text className="text-red-500 mb-4">{error}</Text> : null}
+      {error ? (
+        <Text className="text-danger-500 mb-4 text-center">{error}</Text>
+      ) : null}
 
       <TouchableOpacity
         onPress={handleRegister}
         disabled={loading}
-        className="bg-blue-600 py-3 rounded-lg mb-4 shadow-lg"
+        className="bg-primary-500 py-3 rounded-lg mb-4 shadow-lg"
       >
-        <Text className="text-white text-center font-semibold text-lg">
+        <Text className="text-background-800 text-center font-semibold text-lg">
           {loading ? "Registering..." : "Sign Up"}
         </Text>
       </TouchableOpacity>
 
       <View className="flex-row justify-center">
-        <Text className="text-gray-400">Already have an account? </Text>
+        <Text className="text-text-400">Already have an account? </Text>
         <TouchableOpacity onPress={() => router.push("/login")}>
-          <Text className="text-blue-500 font-semibold">Login</Text>
+          <Text className="text-primary-500 font-semibold">Login</Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>

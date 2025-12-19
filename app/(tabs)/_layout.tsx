@@ -1,22 +1,26 @@
 import { Tabs } from "expo-router";
 import { Home, Settings } from "lucide-react-native";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 
-function TabIcon({ focused, IconComponent, title }: any) {
-  if (focused) {
-    return (
-      <View className="flex-row items-center justify-center bg-primary px-4 py-2 rounded-full">
-        <IconComponent size={20} color="#151312" strokeWidth={2.5} />
-        <Text className="text-secondary text-base font-semibold ml-2">
-          {title}
-        </Text>
-      </View>
-    );
-  }
+type TabIconProps = {
+  focused: boolean;
+  IconComponent: any;
+};
 
+function TabIcon({ focused, IconComponent }: TabIconProps) {
   return (
-    <View className="size-full justify-center items-center mt-4">
-      <IconComponent size={20} color="#A8B5DB" strokeWidth={2} />
+    <View className="items-center justify-center">
+      <IconComponent
+        size={22}
+        strokeWidth={focused ? 2.5 : 2}
+        color={
+          focused
+            ? "rgb(34 197 94)" // primary-500
+            : "rgb(148 163 184)" // text-300
+        }
+      />
+
+      {focused && <View className="mt-1 h-1 w-5 rounded-full bg-primary-500" />}
     </View>
   );
 }
@@ -26,32 +30,24 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         tabBarShowLabel: false,
-        tabBarItemStyle: {
-          width: "100%",
-          height: "100%",
-          justifyContent: "center",
-          alignItems: "center",
-        },
         tabBarStyle: {
-          backgroundColor: "#0F0D23",
-          borderRadius: 50,
-          marginHorizontal: 20,
-          marginBottom: 36,
-          height: 52,
+          backgroundColor: "rgb(11 15 20)", // background-800
+          height: 56,
           position: "absolute",
-          overflow: "hidden",
+          marginHorizontal: 20,
+          marginBottom: 28,
+          borderRadius: 16,
           borderWidth: 1,
-          borderColor: "#0F0D23",
+          borderColor: "rgb(31 41 55)", // background-700
         },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
           headerShown: false,
           tabBarIcon: ({ focused }) => (
-            <TabIcon focused={focused} IconComponent={Home} title="Home" />
+            <TabIcon focused={focused} IconComponent={Home} />
           ),
         }}
       />
@@ -59,14 +55,9 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="Settings"
         options={{
-          title: "Settings",
           headerShown: false,
           tabBarIcon: ({ focused }) => (
-            <TabIcon
-              focused={focused}
-              IconComponent={Settings}
-              title="Settings"
-            />
+            <TabIcon focused={focused} IconComponent={Settings} />
           ),
         }}
       />
