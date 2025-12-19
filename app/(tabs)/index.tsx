@@ -18,8 +18,6 @@ export default function Index() {
   const fetchChats = async () => {
     try {
       const response = await getAllUserChats();
-      console.log(response);
-      
       if (response.status === "success") {
         setChats(response.data);
       }

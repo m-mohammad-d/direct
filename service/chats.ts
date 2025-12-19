@@ -19,3 +19,31 @@ export const getAllUserChats = async () => {
   return data;
 };
 
+// Create Group
+export const createGroup = async (title: string, description: string) => {
+  const token = await getToken();
+  const res = await fetch(`${API_URL}/api/chat`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      title,
+      description,
+    }),
+  });
+  return res.json();
+};
+
+export const joinChatApi = async (inviteCode: string) => {
+  const token = await getToken();
+  const res = await fetch(`${API_URL}/api/chat/${inviteCode}/join`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return res.json();
+};
