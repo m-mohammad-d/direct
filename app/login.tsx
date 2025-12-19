@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { signIn } from "@/service/auth";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -18,18 +18,18 @@ export default function Login() {
   const [error, setError] = useState("");
 
   const handleLogin = async () => {
+    if (!email || !password) return setError("Please fill all fields");
     setLoading(true);
     setError("");
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) setError(error.message);
-    else router.replace("/");
-
-    setLoading(false);
+    try {
+      await signIn(email, password);
+      router.replace("/"); 
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -66,7 +66,9 @@ export default function Login() {
         />
       </View>
 
-      {error ? <Text className="text-red-500 mb-4">{error}</Text> : null}
+      {error ? (
+        <Text className="text-red-500 mb-4 text-center">{error}</Text>
+      ) : null}
 
       <TouchableOpacity
         onPress={handleLogin}

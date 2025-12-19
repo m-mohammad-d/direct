@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { removeToken } from "@/lib/storage";
 import { useRouter } from "expo-router";
 import { Text, TouchableOpacity, View } from "react-native";
 
@@ -6,7 +6,8 @@ export default function Index() {
   const router = useRouter();
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    removeToken();
+    router.replace("/login");
   };
 
   return (
