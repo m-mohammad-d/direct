@@ -3,7 +3,7 @@ import { getToken } from "@/lib/storage";
 
 export const getAllUserChats = async () => {
   const token = await getToken();
-  const res = await fetch(`${API_URL}/api/chats`, {
+  const res = await fetch(`${API_URL}/api/chat`, {
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
