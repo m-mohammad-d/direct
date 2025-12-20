@@ -1,5 +1,5 @@
-import { useRouter } from "expo-router";
-import { Image, Text, TouchableOpacity, View } from "react-native";
+import { Link, useRouter } from "expo-router";
+import { Image, Text, View } from "react-native";
 
 interface ChatItemProps {
   chat: {
@@ -17,8 +17,11 @@ export default function ChatItem({ chat }: ChatItemProps) {
     chat.messages && chat.messages.length > 0 ? chat.messages[0] : null;
 
   return (
-    <TouchableOpacity
-      onPress={() => router.push(`/chat/${chat.id}`)}
+    <Link
+      href={{
+        pathname: "/chat/[id]",
+        params: { id: chat.id },
+      }}
       className="flex-row items-center p-4 border-b border-background-700 bg-background-800 active:bg-background-600"
     >
       {/* Avatar Circle */}
@@ -52,6 +55,6 @@ export default function ChatItem({ chat }: ChatItemProps) {
           {lastMessage ? lastMessage.content : "No messages yet"}
         </Text>
       </View>
-    </TouchableOpacity>
+    </Link>
   );
 }
