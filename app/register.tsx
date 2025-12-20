@@ -1,4 +1,5 @@
 import { signUp } from "@/service/auth";
+import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -16,23 +17,42 @@ export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
-  const handleRegister = async () => {
-    setError("");
-    if (password !== confirmPassword) return setError("Passwords do not match");
-    if (password.length < 6) return setError("Password too short");
-
-    setLoading(true);
-    try {
-      await signUp(username, email, password);
+  const registerMutation = useMutation({
+    mutationFn: ({
+      username,
+      email,
+      password,
+    }: {
+      username: string;
+      email: string;
+      password: string;
+    }) => signUp(username, email, password),
+    onSuccess: () => {
       router.replace("/");
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+    },
+    onError: (error) => {
+      alert(error.message || "Registration failed");
+    },
+  });
+
+  const handleRegister = () => {
+    if (!username || !email || !password || !confirmPassword) {
+      alert("Please fill all fields");
+      return;
     }
+
+    if (password !== confirmPassword) {
+      alert("Passwords do not match");
+      return;
+    }
+
+    if (password.length < 6) {
+      alert("Password too short");
+      return;
+    }
+
+    registerMutation.mutate({ username, email, password });
   };
 
   return (
@@ -92,17 +112,13 @@ export default function Register() {
         />
       </View>
 
-      {error ? (
-        <Text className="text-danger-500 mb-4 text-center">{error}</Text>
-      ) : null}
-
       <TouchableOpacity
         onPress={handleRegister}
-        disabled={loading}
+        disabled={registerMutation.isPending}
         className="bg-primary-500 py-3 rounded-lg mb-4 shadow-lg"
       >
         <Text className="text-background-800 text-center font-semibold text-lg">
-          {loading ? "Registering..." : "Sign Up"}
+          {registerMutation.isPending ? "Registering..." : "Sign Up"}
         </Text>
       </TouchableOpacity>
 

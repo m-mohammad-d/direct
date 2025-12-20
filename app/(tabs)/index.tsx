@@ -1,7 +1,7 @@
 import ChatItem from "@/components/ChatItem";
 import { getAllUserChats } from "@/service/chats";
-import { useLocalSearchParams } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import React from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -12,37 +12,24 @@ import {
 } from "react-native";
 
 export default function Index() {
-  const [chats, setChats] = useState([]);
-  const { refresh } = useLocalSearchParams();
-
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-
-  const fetchChats = async () => {
-    try {
+  const {
+    data: chats = [],
+    isLoading,
+    isRefetching,
+    refetch,
+    error,
+  } = useQuery({
+    queryKey: ["chats"],
+    queryFn: async () => {
       const response = await getAllUserChats();
-
-      if (response.status === "success") {
-        setChats(response.data);
+      if (response.status !== "success") {
+        throw new Error("Failed to fetch chats");
       }
-    } catch (error) {
-      console.error("Error fetching chats:", error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+      return response.data;
+    },
+  });
 
-  useEffect(() => {
-    fetchChats();
-  }, [refresh]);
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchChats();
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
       <View className="flex-1 justify-center items-center bg-background-900">
         <ActivityIndicator size="large" color="#22C55E" />
@@ -60,12 +47,12 @@ export default function Index() {
       {/* List */}
       <FlatList
         data={chats}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => <ChatItem chat={item} />}
         refreshControl={
           <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
+            refreshing={isRefetching}
+            onRefresh={refetch}
             tintColor="#22C55E"
             colors={["#22C55E"]}
           />
@@ -73,10 +60,12 @@ export default function Index() {
         ListEmptyComponent={
           <View className="flex-1 justify-center items-center mt-32 px-10">
             <Text className="text-text-100 text-xl font-bold text-center">
-              No chats found
+              {error ? "Error loading chats" : "No chats found"}
             </Text>
             <Text className="text-text-400 text-center mt-2">
-              You haven't joined any groups or started a conversation yet.
+              {error
+                ? "Please check your internet connection and try again."
+                : "You haven't joined any groups yet."}
             </Text>
           </View>
         }

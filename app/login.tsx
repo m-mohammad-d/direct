@@ -1,4 +1,5 @@
 import { signIn } from "@/service/auth";
+import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -14,22 +15,25 @@ export default function Login() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
-  const handleLogin = async () => {
-    if (!email || !password) return setError("Please fill all fields");
-    setLoading(true);
-    setError("");
-
-    try {
-      await signIn(email, password);
+  // React Query Mutation
+  const loginMutation = useMutation({
+    mutationFn: ({ email, password }: { email: string; password: string }) =>
+      signIn(email, password),
+    onSuccess: () => {
       router.replace("/");
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+    },
+    onError: (error) => {
+      alert(error.message || "Login failed");
+    },
+  });
+
+  const handleLogin = () => {
+    if (!email || !password) {
+      alert("Please fill all fields");
+      return;
     }
+    loginMutation.mutate({ email, password });
   };
 
   return (
@@ -66,17 +70,19 @@ export default function Login() {
         />
       </View>
 
-      {error ? (
-        <Text className="text-danger-500 mb-4 text-center">{error}</Text>
-      ) : null}
+      {loginMutation.isError && (
+        <Text className="text-danger-500 mb-4 text-center">
+          {(loginMutation.error as any)?.message || "Login failed"}
+        </Text>
+      )}
 
       <TouchableOpacity
         onPress={handleLogin}
-        disabled={loading}
+        disabled={loginMutation.isPending}
         className="bg-primary-500 py-3 rounded-lg mb-4 shadow-lg"
       >
         <Text className="text-background-800 text-center font-semibold text-lg">
-          {loading ? "Logging in..." : "Login"}
+          {loginMutation.isPending ? "Logging in..." : "Login"}
         </Text>
       </TouchableOpacity>
 
