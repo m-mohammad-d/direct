@@ -2,13 +2,37 @@ import { Message } from "@/types/message";
 import { Ionicons } from "@expo/vector-icons";
 import dayjs from "dayjs";
 import React from "react";
-import { Text, View } from "react-native";
+import { Alert, Text, TouchableOpacity, View } from "react-native";
 import UserAvatar from "./UserAvatar";
 
+interface ChatBubbleProps {
+  item: Message;
+  isMine: boolean;
+  onDelete: (id: string) => void;
+  onEdit: (item: Message) => void;
+}
+
 export const ChatBubble = React.memo(
-  ({ item, isMine }: { item: Message; isMine: boolean }) => {
+  ({ item, isMine, onDelete, onEdit }: ChatBubbleProps) => {
+    // Handler for editing/deleting own messages
+    const handleLongPress = () => {
+      if (!isMine) return;
+
+      Alert.alert("Message Options", "Choose an action", [
+        { text: "Edit Message", onPress: () => onEdit(item) },
+        {
+          text: "Delete Message",
+          onPress: () => onDelete(item.id),
+          style: "destructive",
+        },
+        { text: "Cancel", style: "cancel" },
+      ]);
+    };
+
     return (
-      <View
+      <TouchableOpacity
+        onLongPress={handleLongPress}
+        activeOpacity={0.8}
         className={`flex-row mb-4 ${isMine ? "justify-end" : "justify-start"}`}
       >
         {!isMine && (
@@ -29,26 +53,34 @@ export const ChatBubble = React.memo(
               {item.senderName}
             </Text>
           )}
+
           <Text className="text-text-50 text-[15px] leading-5">
             {item.content}
           </Text>
+
           <View className="flex-row items-center justify-end mt-1">
             <Text
               className={`text-[10px] ${isMine ? "text-primary-200" : "text-text-400"}`}
             >
               {dayjs(item.createdAt).format("HH:mm")}
             </Text>
-            {isMine && item.isOptimistic && (
-              <Ionicons
-                name="time-outline"
-                size={10}
-                color="#BBF7D0"
-                style={{ marginLeft: 4 }}
-              />
+
+            {isMine && (
+              <View className="flex-row items-center ml-1">
+                {item.isOptimistic ? (
+                  <Ionicons name="time-outline" size={10} color="#BBF7D0" />
+                ) : (
+                  <Ionicons
+                    name="checkmark-done-outline"
+                    size={12}
+                    color="#BBF7D0"
+                  />
+                )}
+              </View>
             )}
           </View>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   }
 );

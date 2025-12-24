@@ -13,17 +13,22 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
+  Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import EmojiPicker, { type EmojiType } from "rn-emoji-keyboard";
+import EmojiPicker from "rn-emoji-keyboard";
 import { io, Socket } from "socket.io-client";
 
 import { ChatBubble } from "@/components/ChatBubble";
 import { API_URL } from "@/config/api";
 import { useUser } from "@/hooks/useUser";
-import GetMessageGroup, { SendMessageGroup } from "@/service/message";
+import GetMessageGroup, {
+  deleteMessageGroup,
+  SendMessageGroup,
+  updateMessageGroup,
+} from "@/service/message";
 import {
   ChatAPIResponse,
   InternalChatResponse,
@@ -39,6 +44,7 @@ export default function ChatPage() {
   // States
   const [inputText, setInputText] = useState("");
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
+  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const socketRef = useRef<Socket | null>(null);
 
   // --- 1. Fetching Logic ---
@@ -106,65 +112,106 @@ export default function ChatPage() {
       );
     });
 
-    return () => {
-      socket.off("new-message");
-      socket.emit("leave-chat", chatId);
-      socket.disconnect();
-    };
-  }, [chatId, queryClient]);
-
-  // --- 3. Mutation ---
-  const { mutate: sendMessage } = useMutation({
-    mutationFn: (content: string) => SendMessageGroup(chatId, content),
-    onMutate: async (newContent) => {
-      await queryClient.cancelQueries({ queryKey: ["messages", chatId] });
-      const previousMessages = queryClient.getQueryData(["messages", chatId]);
-
-      const optimisticMsg: Message = {
-        id: `temp-${Date.now()}`,
-        content: newContent,
-        senderId: user?.id || "me",
-        senderName: user?.username || "Me",
-        avatar: user?.avatar || null,
-        createdAt: new Date().toISOString(),
-        isOptimistic: true,
-      };
-
+    socket.on("update-message", (updatedMsg: ServerMessage) => {
       queryClient.setQueryData<InfiniteData<InternalChatResponse>>(
         ["messages", chatId],
         (old) => {
           if (!old) return old;
-          const newPages = [...old.pages];
-          newPages[0] = {
-            ...newPages[0],
-            messages: [optimisticMsg, ...newPages[0].messages],
+          return {
+            ...old,
+            pages: old.pages.map((page) => ({
+              ...page,
+              messages: page.messages.map((m) =>
+                m.id === updatedMsg.id
+                  ? { ...m, content: updatedMsg.content }
+                  : m
+              ),
+            })),
           };
-          return { ...old, pages: newPages };
         }
       );
+    });
+
+    socket.on("delete-message", (data: { id: string }) => {
+      queryClient.setQueryData<InfiniteData<InternalChatResponse>>(
+        ["messages", chatId],
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page) => ({
+              ...page,
+              messages: page.messages.filter((m) => m.id !== data.id),
+            })),
+          };
+        }
+      );
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [chatId]);
+
+  // --- 3. Mutations ---
+  const { mutate: sendMessage } = useMutation({
+    mutationFn: (content: string) => SendMessageGroup(chatId, content),
+    onSettled: () =>
+      queryClient.invalidateQueries({ queryKey: ["messages", chatId] }),
+  });
+
+  const { mutate: updateMessage } = useMutation({
+    mutationFn: ({ id, content }: { id: string; content: string }) =>
+      updateMessageGroup(chatId, content, id),
+    onSuccess: (_, variables) => {
+      queryClient.setQueryData<InfiniteData<InternalChatResponse>>(
+        ["messages", chatId],
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page) => ({
+              ...page,
+              messages: page.messages.map((m) =>
+                m.id === variables.id ? { ...m, content: variables.content } : m
+              ),
+            })),
+          };
+        }
+      );
+      setEditingMessage(null);
       setInputText("");
-      return { previousMessages };
-    },
-    onError: (_, __, context) => {
-      queryClient.setQueryData(["messages", chatId], context?.previousMessages);
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["messages", chatId] });
     },
   });
 
+  const { mutate: deleteMessage } = useMutation({
+    mutationFn: (id: string) => deleteMessageGroup(chatId, id),
+    onSuccess: (_, deletedId) => {
+      queryClient.setQueryData<InfiniteData<InternalChatResponse>>(
+        ["messages", chatId],
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page) => ({
+              ...page,
+              messages: page.messages.filter((m) => m.id !== deletedId),
+            })),
+          };
+        }
+      );
+    },
+  });
+
+  // --- 4. Handlers ---
   const handleSend = () => {
     if (!inputText.trim()) return;
-    sendMessage(inputText.trim());
-  };
-
-  const handlePickEmoji = (emojiObject: EmojiType) => {
-    setInputText((prev) => prev + emojiObject.emoji);
-  };
-
-  const toggleEmojiPicker = () => {
-    Keyboard.dismiss();
-    setIsEmojiPickerOpen(true);
+    if (editingMessage) {
+      updateMessage({ id: editingMessage.id, content: inputText.trim() });
+    } else {
+      sendMessage(inputText.trim());
+      setInputText("");
+    }
   };
 
   return (
@@ -182,34 +229,60 @@ export default function ChatPage() {
           <FlatList
             data={allMessages}
             renderItem={({ item }) => (
-              <ChatBubble item={item} isMine={item.senderId === user?.id} />
+              <ChatBubble
+                item={item}
+                isMine={item.senderId === user?.id}
+                onDelete={(id) => deleteMessage(id)}
+                onEdit={(msg) => {
+                  setEditingMessage(msg);
+                  setInputText(msg.content);
+                }}
+              />
             )}
             keyExtractor={(item) => item.id}
             inverted
             onEndReached={() => hasNextPage && fetchNextPage()}
             onEndReachedThreshold={0.3}
-            removeClippedSubviews
             contentContainerStyle={{
               paddingHorizontal: 16,
               paddingVertical: 20,
             }}
-            ListFooterComponent={
-              isFetchingNextPage ? (
-                <ActivityIndicator color="#22C55E" className="my-4" />
-              ) : null
-            }
           />
         )}
       </View>
 
       {/* Input Section */}
       <View className="px-4 pt-2 pb-6 bg-background-800 border-t border-background-700">
-        <View className="flex-row items-end bg-background-700 rounded-3xl px-4 py-2 border border-background-600">
-          {/* Emoji Button */}
+        {editingMessage && (
+          <View className="flex-row justify-between items-center bg-background-700 px-3 py-2 rounded-t-2xl border-l-4 border-primary-500 mb-0.5">
+            <View className="flex-1 pr-4">
+              <Text className="text-primary-500 text-[10px] font-bold uppercase">
+                Editing Message
+              </Text>
+              <Text className="text-text-400 text-xs" numberOfLines={1}>
+                {editingMessage.content}
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => {
+                setEditingMessage(null);
+                setInputText("");
+              }}
+            >
+              <Ionicons name="close-circle" size={20} color="#94A3B8" />
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <View
+          className={`flex-row items-end bg-background-700 ${editingMessage ? "rounded-b-3xl" : "rounded-3xl"} px-4 py-2 border border-background-600`}
+        >
           <TouchableOpacity
-            onPress={toggleEmojiPicker}
+            onPress={() => {
+              Keyboard.dismiss();
+              setIsEmojiPickerOpen(true);
+            }}
             className="pr-2 pb-1"
-            activeOpacity={0.7}
           >
             <Ionicons name="happy-outline" size={24} color="#94A3B8" />
           </TouchableOpacity>
@@ -230,30 +303,24 @@ export default function ChatPage() {
               inputText.trim() ? "bg-primary-500" : "bg-background-500"
             }`}
           >
-            <Ionicons name="arrow-up" size={24} color="white" />
+            <Ionicons
+              name={editingMessage ? "checkmark" : "arrow-up"}
+              size={24}
+              color="white"
+            />
           </TouchableOpacity>
         </View>
       </View>
 
       <EmojiPicker
-        onEmojiSelected={handlePickEmoji}
+        onEmojiSelected={(emoji) => setInputText((prev) => prev + emoji.emoji)}
         open={isEmojiPickerOpen}
         onClose={() => setIsEmojiPickerOpen(false)}
-        enableRecentlyUsed
-        allowMultipleSelections
-        enableSearchBar
-        enableSearchAnimation
         theme={{
+          container: "#1E293B",
           backdrop: "#00000088",
           knob: "#22C55E",
-          container: "#1E293B",
           header: "#F8FAFC",
-          category: {
-            icon: "#22C55E",
-            iconActive: "#F8FAFC",
-            container: "#0F172A",
-            containerActive: "#22C55E",
-          },
         }}
       />
     </KeyboardAvoidingView>
