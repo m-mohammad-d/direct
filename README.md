@@ -1,50 +1,92 @@
-# Welcome to your Expo app 👋
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
-## Get started
+# 🟢 Direct – Real-Time Chat App
 
-1. Install dependencies
+A **real-time chat app** built with **Expo + React Native + TypeScript**, focusing on clean architecture and real-world chat functionality.
+Designed for scalability, real-time communication, and a smooth cross-platform experience.
 
-   ```bash
-   npm install
-   ```
+---
 
-2. Start the app
+## ⚡ Features
 
-   ```bash
-   npx expo start
-   ```
+* ✏️ Edit & 🗑️ Delete messages
+* 🆕 Create new chats
+* 🔗 Join chats via invite code
+* 🖼️ User avatars & profile management
+* 📦 Real-time updates via Socket.IO
+* 😄 Emoji support in chats
+* 🔐 Authentication & user management
 
-In the output, you'll find options to open the app in a
+---
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## 🧰 Tech Stack
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+* **Expo & React Native** – Cross-platform mobile app
+* **TypeScript** – Type safety
+* **React Query** – Server state management
+* **Socket.IO** – Real-time communication
+* **Tailwind CSS & NativeWind** – Styling
+* **React Hook Form + Zod** – Form handling & validation
+* **Lucide React Native & Expo Vector Icons** – Icons & visuals
+* **AsyncStorage** – Persistent user data
+* **Day.js** – Date formatting
+* **NetInfo** – Online/offline detection
 
-## Get a fresh project
+---
 
-When you're ready, run:
+## 🚀 Getting Started
+
+Follow these steps to **run the app locally**:
+
+### 1️⃣ Clone the repository
 
 ```bash
-npm run reset-project
+git clone https://github.com/m-mohammad-d/direct.git
+cd direct
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### 2️⃣ Install dependencies
 
-## Learn more
+```bash
+npm install
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+### 3️⃣ Start Expo
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+npm start
+```
 
-## Join the community
+This will open the **Expo Dev Tools** in your browser.
 
-Join our community of developers creating universal apps.
+### 4️⃣ Run on your preferred platform
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+* **Android**: Press `a` or click **Run on Android device/emulator**
+* **iOS**: Press `i` or click **Run on iOS simulator**
+* **Web**: Press `w` or click **Run in web browser**
+
+### 5️⃣ Environment Variables
+
+If needed, create a `.env` file for backend URL or API keys:
+
+```
+API_URL=https://your-backend.com/api
+```
+
+---
+
+## 💡 Tips for Development
+
+* Hot Reloading is enabled – code changes appear instantly
+* All chat data is **cached via React Query** for smoother UI
+* Custom hooks separate logic from UI for maintainability
+* Socket.IO ensures **real-time updates** for messages, edits, deletions
+
+---
+
+## 🎨 Visuals & Styling
+
+* Tailwind CSS via NativeWind for responsive and clean UI
+* Lucide icons for sleek, modern look
+* Emojis supported in messages for fun interaction
+
