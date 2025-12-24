@@ -45,9 +45,6 @@ export const updateUserProfile = async (data: {
   }
 
   const updatedUser = await response.json();
-  console.log(data);
-
-  console.log(updatedUser);
 
   return updatedUser;
 };
@@ -74,4 +71,23 @@ export const updateUserPassowrd = async (data: {
 
   const updatedUser = await response.json();
   return updatedUser;
+};
+
+export const getUserById = async (userId: string) => {
+  const token = await getToken();
+
+  const response = await fetch(`${API_URL}/api/users/${userId}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.message || "Failed to fetch user");
+  }
+
+  return response.json();
 };

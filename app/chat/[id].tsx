@@ -3,6 +3,7 @@ import {
   InfiniteData,
   useInfiniteQuery,
   useMutation,
+  useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
 import { useLocalSearchParams } from "expo-router";
@@ -12,6 +13,7 @@ import {
   FlatList,
   Keyboard,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Text,
   TextInput,
@@ -22,6 +24,7 @@ import EmojiPicker from "rn-emoji-keyboard";
 import { io, Socket } from "socket.io-client";
 
 import { ChatBubble } from "@/components/ChatBubble";
+import UserAvatar from "@/components/UserAvatar";
 import { API_URL } from "@/config/api";
 import { useUser } from "@/hooks/useUser";
 import GetMessageGroup, {
@@ -29,6 +32,7 @@ import GetMessageGroup, {
   SendMessageGroup,
   updateMessageGroup,
 } from "@/service/message";
+import { getUserById } from "@/service/user";
 import {
   ChatAPIResponse,
   InternalChatResponse,
@@ -45,9 +49,10 @@ export default function ChatPage() {
   const [inputText, setInputText] = useState("");
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const socketRef = useRef<Socket | null>(null);
 
-  // --- 1. Fetching Logic ---
+  // --- 1. Fetching Messages Logic ---
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
     useInfiniteQuery<InternalChatResponse>({
       queryKey: ["messages", chatId],
@@ -76,9 +81,16 @@ export default function ChatPage() {
       initialPageParam: 1,
     });
 
+  // --- 2. Fetching Target User Profile (Replaces manual targetUser state) ---
+  const { data: targetUser, isLoading: isLoadingProfile } = useQuery({
+    queryKey: ["user-profile", selectedUserId],
+    queryFn: () => getUserById(selectedUserId!),
+    enabled: !!selectedUserId, // Only fetch when an ID is selected
+  });
+
   const allMessages = data?.pages.flatMap((page) => page.messages) || [];
 
-  // --- 2. WebSocket Logic ---
+  // --- 3. WebSocket Logic ---
   useEffect(() => {
     socketRef.current = io(API_URL, { transports: ["websocket"] });
     const socket = socketRef.current;
@@ -112,48 +124,12 @@ export default function ChatPage() {
       );
     });
 
-    socket.on("update-message", (updatedMsg: ServerMessage) => {
-      queryClient.setQueryData<InfiniteData<InternalChatResponse>>(
-        ["messages", chatId],
-        (old) => {
-          if (!old) return old;
-          return {
-            ...old,
-            pages: old.pages.map((page) => ({
-              ...page,
-              messages: page.messages.map((m) =>
-                m.id === updatedMsg.id
-                  ? { ...m, content: updatedMsg.content }
-                  : m
-              ),
-            })),
-          };
-        }
-      );
-    });
-
-    socket.on("delete-message", (data: { id: string }) => {
-      queryClient.setQueryData<InfiniteData<InternalChatResponse>>(
-        ["messages", chatId],
-        (old) => {
-          if (!old) return old;
-          return {
-            ...old,
-            pages: old.pages.map((page) => ({
-              ...page,
-              messages: page.messages.filter((m) => m.id !== data.id),
-            })),
-          };
-        }
-      );
-    });
-
     return () => {
       socket.disconnect();
     };
   }, [chatId]);
 
-  // --- 3. Mutations ---
+  // --- 4. Mutations ---
   const { mutate: sendMessage } = useMutation({
     mutationFn: (content: string) => SendMessageGroup(chatId, content),
     onSettled: () =>
@@ -203,7 +179,7 @@ export default function ChatPage() {
     },
   });
 
-  // --- 4. Handlers ---
+  // --- 5. Handlers ---
   const handleSend = () => {
     if (!inputText.trim()) return;
     if (editingMessage) {
@@ -237,6 +213,7 @@ export default function ChatPage() {
                   setEditingMessage(msg);
                   setInputText(msg.content);
                 }}
+                onAvatarPress={(userId) => setSelectedUserId(userId)}
               />
             )}
             keyExtractor={(item) => item.id}
@@ -275,7 +252,9 @@ export default function ChatPage() {
         )}
 
         <View
-          className={`flex-row items-end bg-background-700 ${editingMessage ? "rounded-b-3xl" : "rounded-3xl"} px-4 py-2 border border-background-600`}
+          className={`flex-row items-end bg-background-700 ${
+            editingMessage ? "rounded-b-3xl" : "rounded-3xl"
+          } px-4 py-2 border border-background-600`}
         >
           <TouchableOpacity
             onPress={() => {
@@ -311,6 +290,56 @@ export default function ChatPage() {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* User Profile Modal */}
+      <Modal
+        visible={!!selectedUserId}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSelectedUserId(null)}
+      >
+        <View className="flex-1 justify-center items-center bg-black/60 px-8">
+          <View className="w-full bg-background-800 rounded-3xl p-6 border border-background-700 items-center shadow-2xl">
+            {isLoadingProfile ? (
+              <ActivityIndicator color="#22C55E" />
+            ) : targetUser ? (
+              <>
+                <UserAvatar
+                  uri={targetUser?.data?.avatar}
+                  name={targetUser?.data?.username}
+                  size={100}
+                />
+                <Text className="text-text-50 text-2xl font-bold mt-4">
+                  {targetUser?.data.displayName || targetUser?.data.username}
+                </Text>
+                <Text className="text-primary-500 text-sm font-medium mb-4">
+                  @{targetUser?.data.username?.toLowerCase()}
+                </Text>
+
+                <View className="w-full bg-background-700 rounded-2xl p-4 mb-6">
+                  <Text className="text-text-400 text-xs uppercase font-bold mb-1">
+                    Bio
+                  </Text>
+                  <Text className="text-text-100 text-[14px]">
+                    {targetUser?.data.bio || "No bio available for this user."}
+                  </Text>
+                </View>
+
+                <TouchableOpacity
+                  onPress={() => setSelectedUserId(null)}
+                  className="bg-primary-600 w-full py-3 rounded-xl items-center"
+                >
+                  <Text className="text-white font-bold text-lg">
+                    Close Profile
+                  </Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <Text className="text-text-200">User not found</Text>
+            )}
+          </View>
+        </View>
+      </Modal>
 
       <EmojiPicker
         onEmojiSelected={(emoji) => setInputText((prev) => prev + emoji.emoji)}

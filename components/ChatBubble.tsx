@@ -10,14 +10,13 @@ interface ChatBubbleProps {
   isMine: boolean;
   onDelete: (id: string) => void;
   onEdit: (item: Message) => void;
+  onAvatarPress?: (userId: string) => void;
 }
 
 export const ChatBubble = React.memo(
-  ({ item, isMine, onDelete, onEdit }: ChatBubbleProps) => {
-    // Handler for editing/deleting own messages
+  ({ item, isMine, onDelete, onEdit, onAvatarPress }: ChatBubbleProps) => {
     const handleLongPress = () => {
       if (!isMine) return;
-
       Alert.alert("Message Options", "Choose an action", [
         { text: "Edit Message", onPress: () => onEdit(item) },
         {
@@ -36,9 +35,12 @@ export const ChatBubble = React.memo(
         className={`flex-row mb-4 ${isMine ? "justify-end" : "justify-start"}`}
       >
         {!isMine && (
-          <View className="mr-2 self-end">
-            <UserAvatar uri={item.avatar} name={item.senderName} size={32} />
-          </View>
+          <TouchableOpacity
+            onPress={() => onAvatarPress?.(item?.senderId)}
+            className="mr-2 self-end"
+          >
+            <UserAvatar uri={item?.avatar} name={item?.senderName} size={32} />
+          </TouchableOpacity>
         )}
 
         <View
