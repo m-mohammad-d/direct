@@ -47,3 +47,26 @@ export const joinChatApi = async (inviteCode: string) => {
   });
   return res.json();
 };
+
+export const leaveChatApi = async (chatId: string) => {
+  const token = await getToken();
+  const res = await fetch(`${API_URL}/api/chat/${chatId}/leave`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return res.json();
+};
+
+export const getChatById = async (chatId: string) => {
+  const token = await getToken();
+  const res = await fetch(`${API_URL}/api/chat/${chatId}`, {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return res.json();
+};

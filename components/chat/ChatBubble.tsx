@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import dayjs from "dayjs";
 import React from "react";
 import { Alert, Text, TouchableOpacity, View } from "react-native";
-import UserAvatar from "./UserAvatar";
+import UserAvatar from "../UserAvatar";
 
 interface ChatBubbleProps {
   item: Message;
